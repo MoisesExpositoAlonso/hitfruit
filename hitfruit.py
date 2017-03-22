@@ -5,32 +5,29 @@ Module hitfruit. Contains functions to label and segmentation/skeletonisation of
 @author: Moises Exposito-Alonso (moisesexpositoalonso@gmail.com)
 
 '''
-import mahotas as mh
-from mahotas import polygon
-import pymorph as pm
-import numpy as np 
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-
-import networkx as nx
-
-from scipy import ndimage as nd
-import skimage.transform as transform
-import skimage.io as sio
-import scipy.misc as sm
-
-import os
+import os, time, pandas, sys
 import math
-
-
-
-
+import cv2
+import mahotas as mh
+import numpy as np 
 from PIL import Image
 import subprocess
-import os, time, pandas
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+# import pymorph as pm
+# import networkx as nx
+# from scipy import ndimage as nd
+# import skimage.transform as transform
+# import skimage.io as sio
+# import scipy.misc as sm
+
+
+sys.path.append('/home/moisesexpositoalonso/ebio/abt6/mexposito/mpy')
+sys.path.append('/ebio/abt6/mexposito/mpy')
 from moi import *
-import numpy as np
+
 sys.path.append('/home/moisesexpositoalonso/ebio/abt6_projects7/ath_1001G_field/hippo')
+sys.path.append('/ebio/abt6/mexposito/ebio/abt6_projects7/ath_1001G_field/hippo')
 from hippo import *
 
 def view_ask(thefile, windowsnap=True):
@@ -288,25 +285,16 @@ class hitfruit(object):
 
         self.sk=''
         self.count =''
+        self.skcount =''
         self.hog =''
         self.branches =''
         self.ends =''
-        self.brahcncount =''
+        self.branchcount =''
         self.endscount =''
         self.bridges =''
+        self.bridgescounts =''
 
-    def nohue(self):
-        self.image=readcolimage(self.image)     
-        self.hsv=maskhsvdenoise(self.image,
-                                h_upper=255,
-                                h_lower=0,
-                                s_upper=255,
-                                s_lower=20,
-                                v_upper=255,
-                                v_lower=0 )
-        hsv = rgb2hsv(denoised) # but return the grey
-        return self
-    
+     
     def segment(self):
         self.image=readcolimage(self.image)     
         self.ip=removeframe(self.image)
@@ -315,26 +303,12 @@ class hitfruit(object):
         self.ip=maskhsvdenoise(self.ip)
         return self
 
-    def skeleton(self):
-        # self.image=readgreyimage(self.image)     
-        color=readcolimage(self.image)     
-        grey=removeframe(readgreyimage(self.image))
-        self.ip=maskhsvdenoise(color, # does not work, needs a 3 channel rgb picture and after white label is 1
-                        h_upper=255,
-                        h_lower=0,
-                        s_upper=255,
-                        s_lower=30,
-                        v_upper=255,
-                        v_lower=0 , denoise=False)
-        self.ip = removeframe(rgb2hsv(self.ip)[:,:,2]) # but return the grey
-        self.ip=dealwhitelabel(grey+self.ip, what='remove',ontooriginal=False)
-        
-        # self.ip= grey - (255 - self.ip)
-        # self.ip=removeframe(self.ip)
-        # # self.ip=dealwhitelabel(self.ip, what='remove',ontooriginal=False)
-        # self.ip=dealwhitelabel(self.ip, what='remove',ontooriginal=True)
-        self.ip=openclose(self.ip,open=False)
-        # # self.sk =mh.thin( self.ip>127 )
+    def skeleton(self):      
+        self.image=removeframe(readgreyimage(self.image))
+        self.ip=dealwhitelabel(self.image, what='remove',ontooriginal=False)
+        # self.ip=openclose(self.ip,open=False)
+        self.sk =mh.thin( self.ip>127 )
+        self.sk=pruning(self.sk, size=15)
         return self
     
     def denoise(self): # not useful
@@ -346,45 +320,48 @@ class hitfruit(object):
     
     def countnonzero(self):
         self.count=cv2.countNonZero(self.ip) 
+        self.skcount=cv2.countNonZero(self.sk*1) 
         return self
 
     def branchedpoints(self):
-        self.branches = branchedPoints(self.ip>0)
+        self.branches = branchedPoints(self.sk>0)
         self.branchcount =cv2.countNonZero(self.branches) 
         return self
 
     def endpoints(self):
-        self.ends = endPoints(self.ip>0)
+        self.ends = endPoints(self.sk>0)
         self.endscount =cv2.countNonZero(self.ends) 
         return self
 
-    def bridges(self):
-        
-        towork=self.image
-        towork=m.thin(towork, m.endpoints('homotopic'), 15)
+    # def bridges(self):
+    #     print 'running bridges'
+    #     towork=self.sk
+    #     # towork=m.thin(towork, m.endpoints('homotopic'), 15)
 
-        seA1 = np.array([[False, True, False],
-                        [False,  True, False],
-                        [True, False,  True]], dtype=bool)
+    #     seA1 = np.array([[False, True, False],
+    #                     [False,  True, False],
+    #                     [True, False,  True]], dtype=bool)
 
-        seB1 = np.array([[False, False, False],
-                        [True, False,  True],
-                        [False,  True, False]], dtype=bool)
+    #     seB1 = np.array([[False, False, False],
+    #                     [True, False,  True],
+    #                     [False,  True, False]], dtype=bool)
 
-        seA2 = np.array([[False, True, False],
-                        [True,  True,  True],
-                        [False, False, False]], dtype=bool)
+    #     seA2 = np.array([[False, True, False],
+    #                     [True,  True,  True],
+    #                     [False, False, False]], dtype=bool)
 
-        seB2 = np.array([[True, False,  True],
-                        [False, False, False],
-                        [False, True, False]], dtype=bool)
-        hmt1 = m.se2hmt(seA1, seB1)
-        hmt2 = m.se2hmt(seA2, seB2)
-        towork = m.union(m.supcanon(towork, hmt1), m.supcanon(towork, hmt2))
-        towork = m.dilate(towork, m.sedisk(10))     
-        towork = m.blob(m.label(towork), 'centroid')
-        self.bridges = m.overlay(towork, m.dilate(self.image,m.sedisk(5)))
-        return self
+    #     seB2 = np.array([[True, False,  True],
+    #                     [False, False, False],
+    #                     [False, True, False]], dtype=bool)
+    #     hmt1 = m.se2hmt(seA1, seB1)
+    #     hmt2 = m.se2hmt(seA2, seB2)
+    #     towork = m.union(m.supcanon(towork, hmt1), m.supcanon(towork, hmt2))
+    #     print towork.shape()
+    #     towork = m.dilate(towork, m.sedisk(10))     
+    #     towork = m.blob(m.label(towork), 'centroid')
+    #     self.bridges = m.overlay(towork, m.dilate(self.image,m.sedisk(5)))
+    #     # self.bridgescounts=towork.max()
+    #     return self
 
     def zeroone(self):
         self.image=(self.image>127)*1
@@ -412,19 +389,20 @@ def save_object(obj, filename):
 
 def branchedPoints(skel, showSE=True):
     """
-    The branching functikons was written by Jean-Patrick Pommier: https://gist.github.com/jeanpat/5712699
+    The branching function was written by Jean-Patrick Pommier: https://gist.github.com/jeanpat/5712699
 
     """
-    X=[]
-    #cross X
-    X0 = np.array([[0, 1, 0], 
-                   [1, 1, 1], 
-                   [0, 1, 0]])
-    X1 = np.array([[1, 0, 1], 
-                   [0, 1, 0], 
-                   [1, 0, 1]])
-    X.append(X0)
-    X.append(X1)
+    # X=[]
+    # #cross X
+    # X0 = np.array([[0, 1, 0], 
+    #                [1, 1, 1], 
+    #                [0, 1, 0]])
+    # X1 = np.array([[1, 0, 1], 
+    #                [0, 1, 0], 
+    #                [1, 0, 1]])
+    # X.append(X0)
+    # X.append(X1)
+    
     #T like
     T=[]
     #T0 contains X0
@@ -467,6 +445,7 @@ def branchedPoints(skel, showSE=True):
     T.append(T5)
     T.append(T6)
     T.append(T7)
+    
     #Y like
     Y=[]
     Y0=np.array([[1, 0, 1], 
@@ -505,45 +484,18 @@ def branchedPoints(skel, showSE=True):
     Y.append(Y7)
     
     bp = np.zeros(skel.shape, dtype=int)
-    for x in X:
-        bp = bp + mh.morph.hitmiss(skel,x)
+    # for x in X:
+    #     bp = bp + mh.morph.hitmiss(skel,x)
     for y in Y:
         bp = bp + mh.morph.hitmiss(skel,y)
     for t in T:
         bp = bp + mh.morph.hitmiss(skel,t)
-        
-    # if showSE==True:
-    #     fig = plt.figure(figsize=(4,5))
-    #     tX =['X0','X1']
-    #     tY =['Y'+str(i) for i in range(0,8)]
-    #     tT =['T'+str(i) for i in range(0,8)]
-    #     ti= tX+tY+tT
-    #     SE=X+Y+T
-    #     print len(SE), len(ti)
-    #     n = 1
-    #     ti = iter(ti)
-    #     for se in SE:
-    #         #print next(ti)
-    #         #print se
-    #         mycmap = mpl.colors.ListedColormap(['black','blue','red'])
-    #         ax = fig.add_subplot(4,5,n,frameon=False, xticks=[], yticks=[])
-    #         plt.title(str(next(ti)))
-    #         plt.imshow(se, interpolation='nearest',vmin=0,vmax=2,cmap=mycmap)
-    #         n = n+1
-    #     fig.subplots_adjust(hspace=0.1,wspace=0.08)
-    #     #ax_cb = fig.add_axes([.9,.25,.1,.3])#
-    #     color_vals=[0,1,2]
-    #     #cb = mpl.colorbar.ColorbarBase(ax_cb,cmap=mycmap, ticks=color_vals)
-    #     #cb.set_ticklabels(['back', 'hit', 'don\'t care'])
-        
-    #     plt.show()
     return bp
-
 
 def endPoints(skel):
 
     """
-    The branching functikons was written by Jean-Patrick Pommier: https://gist.github.com/jeanpat/5712699
+    The endpoints function was written by Jean-Patrick Pommier: https://gist.github.com/jeanpat/5712699
 
     """
     
@@ -588,12 +540,13 @@ def endPoints(skel):
     ep7=mh.morph.hitmiss(skel,endpoint7)
     ep8=mh.morph.hitmiss(skel,endpoint8)
     ep = ep1+ep2+ep3+ep4+ep5+ep6+ep7+ep8
+    ep = ep1+ep3+ep5+ep7 # removing some that I think might not be interesting. MUCH BETTER!
     return ep
 
 def pruning(skeleton, size):
 
     """
-    The branching functikons was written by Jean-Patrick Pommier: https://gist.github.com/jeanpat/5712699
+    The prunning function was written by Jean-Patrick Pommier: https://gist.github.com/jeanpat/5712699
 
     """
 
