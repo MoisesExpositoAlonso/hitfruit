@@ -1,5 +1,5 @@
 
-# hitfruit: skeletonisation of pictures of plant inflorescence for fruit estimation
+# hitfruit: skeletonisation of plant inflorescences' images for fruit estimation
 ## Moises Exposito-Alonso (moisesexpositoalonso@gmail.com)
 
 
