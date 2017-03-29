@@ -7,8 +7,7 @@
 The code below will download the repository and run the example dataset. The output
 images will be under the folder /sk and be labeled as "proc" for the segmented image,
 "sk" for the skeletonised image, and "end" or "branches" for the branching or end points
-overlayed onto the skeletonised image. A tab separated file, .tsv, will be produced 
-and stores the non-black pixel count of the above images.
+overlayed onto the skeletonised image. A tab separated file, .tsv, is produced to store the number of non-black pixels of the processed images.
 
 ``` sh
 git clone https://github.com/MoisesExpositoAlonso/hitfruit
