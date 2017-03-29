@@ -558,3 +558,21 @@ def pruning(skeleton, size):
         endpoints = np.logical_not(endpoints)
         skeleton = np.logical_and(skeleton,endpoints)
     return skeleton
+
+def readcounts(files,path):
+    counts=[]
+    # def makecount(f,data)
+
+    for f in files:
+        with open(os.path.join(path,f),'r') as fr:
+            data = fr.read()
+            # print data
+            counts.append(data.split('\t'))
+            
+    return counts
+
+def getqsub():
+    res=subprocess.check_output(['qstat' ,'-u' ,'mexposito' ] ) 
+    res=[x for x in res.split("\n")]
+    qwait=len(res)
+    return qwait
