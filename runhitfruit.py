@@ -47,8 +47,8 @@ import argparse
 parser = argparse.ArgumentParser(description='hitfruit: segmentation/skeletonisation of harvested pictures')
 parser.add_argument("image", help="provide the file name of an image to analyse",
                     type=str)
-parser.add_argument("-a","--analysis", help="provide a flag of analysis [sk=skeletonise/seg=segment]",
-                    type=str,default='sk' , choices=['sk','skeletonise','seg','segment']	)
+# parser.add_argument("-a","--analysis", help="provide a flag of analysis [sk=skeletonise/seg=segment]",
+#                     type=str,default='sk' , choices=['sk','skeletonise','seg','segment']	)
 
 parser.add_argument("-s","--save", help="provide a logic flag to decide whether to save images",
                     type=str,default='True',choices=['False','True'])
@@ -60,7 +60,7 @@ parser.add_argument("-o","--outputpath", help="provide the output path for stori
 args = parser.parse_args()
 print 'Interpreted arguments:'
 print '   image file:',args.image
-print '   type of analysis:',args.analysis
+# print '   type of analysis:',args.analysis
 print '   save images:',args.save
 print '   outputpath:',args.outputpath
 print '\n......................................................................................\n'
