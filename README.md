@@ -19,4 +19,4 @@ python exampleskeleton.py
 
 ### NOTE
 
-This module depends on functions from my other [hippo](https://github.com/MoisesExpositoAlonso/hippo) and [mpy](https://github.com/MoisesExpositoAlonso/mpy) repositories.
+This module depends on functions from my other [hippo](https://github.com/MoisesExpositoAlonso/hippo) and [mpy](https://github.com/MoisesExpositoAlonso/moi-py) repositories. So two lines in the scripts runhitfruit.py and hitfruit.py have to be modified indicating the path to the hippo and moi modules in your computer.
